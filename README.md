@@ -37,30 +37,85 @@ This is a high-load service available to users on multiple platforms: both mobil
 
 ## Back of Envelope
 
-- Users: 10 million total / 1.5 million DAU max
-- Location pings:
-  - Size per ping: ~100 B (16 B for coordinates + metadata)
-  - Volume per day: 1.5 M DAU × 100 pings = 150M pings/day
-    - 150M / 86 400s ≈ 1,736 writes per second, peak ~15k w/ps
-  - Route-history reads: 1.5M DAU × 2 requests = 3 million reads/day
-    - 3M / 86 400 ≈ 35 r/ps, peak ~200 r/ps
-  - Read-write ratio (location): ~1 billion writes: 20 million reads ≈ 50:1
- 
-- Matching requests:
-  - Volume per day: 1.5M DAU × 20 match requests = 30 million reads/day
-    - 30M / 86,400s ≈ 347 r/ps, peak ~3 000 rps
+### Key Assumptions
+- **Users:** 10 million total / 1.5 million DAU (Daily Active Users) max
 
-- Places of Interest requests:
-  - Volume per day: 1.5M DAU × 10 = 15 million/day
-    - 15M / 86,400s ≈ 174 r/ps, peak ~1,5k r/ps
+---
 
-- Direct Messages:
-  - Each active user sends: ~10 messages/day avg.
-  - Average message payload (text + metadata) ≈ 1 KB.
-  - Each message is read by the recipient(s) once on average.
-  - Writes per day: 1.5 M DAU × 10 = 15 million messages/day
-  - 15 M / 86 400 ≈ 174 writes/sec (peak ~1,500 wps)
-  - Reads per day: 1.5 M DAU × (assume 20 reads) = 30 million reads/day
-    - 30 M / 86 400 ≈ 347 rps (peak ~3,000 rps)
-  - Read-write ratio: ~15 M writes: 30M reads ≈ 1:2
+### Traffic Estimates (Back of the Envelope)
 
+#### 📍 Location Pings
+- **Size per ping:** ~100 B (16 B for coordinates + metadata)
+- **Volume per day:** 1.5M DAU × 100 pings = 150M pings/day
+- **Write Rate:** 150M / 86,400s ≈ 1,736 writes/sec (peak ~15k wps)
+- **Route-history reads:** 1.5M DAU × 2 requests = 3 million reads/day
+- **Read Rate:** 3M / 86,400s ≈ 35 reads/sec (peak ~200 rps)
+- **Read-Write Ratio:** ~50:1 (Write Heavy)
+
+#### ❤️ Matching Requests
+- **Volume per day:** 1.5M DAU × 20 requests = 30 million reads/day
+- **Read Rate:** 30M / 86,400s ≈ 347 reads/sec (peak ~3,000 rps)
+
+#### ☕ Places of Interest Requests
+- **Volume per day:** 1.5M DAU × 10 requests = 15 million/day
+- **Read Rate:** 15M / 86,400s ≈ 174 reads/sec (peak ~1,500 rps)
+
+#### 💬 Direct Messages
+- **Writes per day:** 1.5M DAU × 10 messages = 15 million messages/day
+- **Write Rate:** 15M / 86,400s ≈ 174 writes/sec (peak ~1,500 wps)
+- **Reads per day:** 1.5M DAU × 20 reads = 30 million reads/day
+- **Read Rate:** 30M / 86,400s ≈ 347 rps (peak ~3,000 rps)
+- **Read-Write Ratio:** ~1:2 (Read Heavy)
+
+#### 💳 Payment Service
+- **Subscribers:** 10% of DAU → 150K subscribers active/day
+- **Write Rate (Transactions):** ~0.06 tps (peak ~1 tps on billing days)
+- **Read Rate (Billing History):** ~0.24 rps (peak ~2 rps)
+- **Admin Queries:** Negligible load (~500 queries/month)
+
+---
+
+### Database Storage Estimates
+
+#### Location Data
+- **Daily:** 150M pings × 100 B ≈ 15 GB/day
+- **Monthly:** 15 GB × 30 ≈ 450 GB/month
+- **Yearly:** 450 GB × 12 ≈ **5.4 TB/year**
+
+#### Profiles & Interests
+- **Total:** 10M users × 1 KB ≈ **10 GB** (one-time growth)
+
+#### Messages
+- **Daily:** 15M messages × 1 KB ≈ 15 GB/day
+- **Yearly:** ≈ 5.4 TB/year
+- **With Overhead:** (+20% for indexes) ≈ **6 TB/year**
+
+#### Transactions & Billing
+- **Subscription logs:** 300 MB/month
+- **One-off purchases:** 450 MB/month
+- **With Overhead:** ≈ 900 MB/month (≈ **11 GB/year**)
+
+#### Indexes & Auxiliary Tables
+- **Total:** ~**50 GB/year**
+
+### Caching (Redis)
+- `latest_location`: `<user_id>`: TTL 90s → ~1.5 M keys/day
+- `matches`: `<user_id>`: TTL 30s → ~1.5 M keys/day
+- `places`: `<geohash>:<category>`: TTL 5 min → A few thousand keys depending on traffic
+- `recent_chats`: `<user_id>`: TTL 5 min (or per conversation) → ~1.5 M keys/day (assuming caching each user’s recent DMs briefly)
+
+---
+
+### Combined Storage Estimates
+- **Location data:** ~5.4 TB/year
+- **Profiles & interests:** ~10 GB (one-time)
+- **Messages:** ~6 TB/year (including overhead)
+- **Transactions & billing logs:** ~11 GB/year
+- **Indexes & auxiliary tables:** ~50 GB/year
+
+---
+
+### Optional Optimizations
+- Archive raw location data older than 30 days to cold storage (e.g., S3 Glacier).
+- Store aggregated "top routes" instead of raw points for older data to reduce DB size (e.g., compress points into polygons).
+- Archive direct messages older than 1 year to cold storage or delete according to user policy.
