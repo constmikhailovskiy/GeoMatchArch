@@ -1,0 +1,72 @@
+@startuml
+!theme plain
+!pragma layout smetana
+
+title Low-Level: Location Service & Interactions (Extra Spacing)
+
+' --- Settings for increased spacing ---
+skinparam packagePadding 25
+skinparam rectanglePadding 20
+skinparam notePadding 15
+skinparam arrowMessagePadding 10
+skinparam defaultFontSize 14
+
+' --- External Actors & Entrypoint ---
+boundary "API Gateway" as gateway
+queue "Apache Kafka" as kafka
+
+' --- The Location Service Itself ---
+package "Location Service Pipeline" #LightGoldenRodYellow {
+    component "Location API\n(Producer)" as producer
+    component "Location Consumer" as consumer
+
+    database "Hot DB (PostGIS)\n(Recent Data)" as hot_db
+    database "Cold Storage (S3)\n(Archive)" as cold_db
+
+    producer ---> hot_db : "3a. READ /location/history"
+    ' Arrow for point 5 is now longer
+    consumer ----> hot_db : "5. WRITE new locations"
+    consumer ----> cold_db: "6. ARCHIVE raw data"
+}
+
+' --- Affected Services ---
+package "Downstream Consumers" {
+    component "Matching Service" as matching
+    database "Search DB\n(Elasticsearch)" as search_db
+
+    matching ----> search_db: "8. Update search index"
+}
+
+
+' --- Communication Flows ---
+
+' Flow 1: Asynchronous Location Ingestion
+note left of producer #LightCyan
+  **Async Ingestion Flow**
+  For high throughput and availability.
+end note
+gateway ---> producer : "1. POST /location/ping\n(Returns 202 Accepted)"
+producer ...> kafka : "2. Publishes 'location_ping' event"
+' Arrow for point 4 is now longer
+kafka .....> consumer: "4. Consumes event batch"
+
+
+' Flow 2: Synchronous History Request
+note right of gateway
+  **Sync Read Flow**
+  For user-facing requests.
+end note
+gateway ---> producer: "3b. GET /location/history"
+
+
+' Flow 3: Asynchronous Event for Matching Service
+note bottom of consumer
+  Consumer can process data and
+  publish a new, aggregated event.
+end note
+' Arrow for point 7 is now longer
+consumer .....> kafka: "7. Publishes 'user_location_pattern_updated'"
+kafka ...> matching: "Consumes event"
+
+
+@enduml
