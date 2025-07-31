@@ -7,7 +7,7 @@
 
 ---
 
-#### 🖼️ Profiles & Interests
+#### 🖼️ [Profiles & Interests](profile/SERVICE_PROFILE.md)
 - **Database Choice:** `Relational DB (PostgreSQL / MySQL)`
 - Profile data (bio, interests, etc.) fits naturally into a normalized relational schema with many-to-many relationships (e.g., `user_interests`).
 - Allows for easy enforcement of foreign-key constraints and efficient lookups via indexed joins.
