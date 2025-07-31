@@ -36,4 +36,10 @@
 - **Rationale:** For a service that manages identity and sensitive data, any compromise on consistency is unacceptable.
     - When a user registers, they must be able to log in immediately.
     - When a user changes their password, any subsequent login attempt must be validated against the **new** password instantly.
-    - **Eventual Consistency
+    - **Eventual Consistency** is not a suitable option, as it could lead to severe security vulnerabilities. For example, after a credential leak and a password reset, an attacker could potentially still log in with the old, compromised password due to replication lag.
+
+---
+
+### Consensus
+- **Requirement:** Required.
+- **Rationale:** Consensus is necessary to enable reliable **automatic failover** in the replicated database cluster. When scaling the system, it is critical that write operations (creating/updating user accounts) are only confirmed if they have been successfully replicated to a majority of follower nodes. A consensus algorithm, managed by a tool like Patroni, ensures that a new leader is elected reliably when the primary node fails, guaranteeing the cluster remains consistent and available.

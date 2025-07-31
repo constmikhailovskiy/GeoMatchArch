@@ -1,6 +1,6 @@
 ### Services & Database Choices
 
-#### 👤 Authentication & User Accounts
+#### 👤 [Authentication & User Accounts](docs/auth/SERVICE_AUTH.md)
 - **Database Choice:** `Relational DB (PostgreSQL / MySQL)`
 - Requires strong **ACID guarantees** for user records, password hashes, and session management.
 - A simple schema with `JOIN` capabilities is sufficient.
