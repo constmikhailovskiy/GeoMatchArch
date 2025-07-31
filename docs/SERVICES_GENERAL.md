@@ -40,3 +40,31 @@
 - Optimized for **very high write throughput** and fast reads of recent messages in a conversation (fan-out reads).
 - Horizontally scalable and partitioned by `conversation_id` to handle massive message volumes without complex joins.
 - An LRU-like algorithm can be used at the application level to manage conversation history.
+
+---
+
+#### 💳 Monetization & Payment Transactions
+- **Database Choice:** `Relational DB (PostgreSQL)`
+- Financial transactions demand **strict consistency**, auditability, and easy reporting, making an ACID-compliant DB essential.
+- A relational ledger table (e.g., with `transaction_id`, `user_id`, `amount`) is easy to index and join with user data for reporting.
+
+---
+
+#### ⚡ Caching & Session Stores
+- **Database Choice:** `In-Memory Key-Value Store (Redis)`
+- Ideal for storing ephemeral, frequently accessed data with short TTLs (Time To Live).
+- Example keys: `latest_location:<user_id>`, `matches:<user_id>`, `places:<geohash>:<category>`.
+
+### Database Strategy Summary
+
+| Domain | Database Type | Replication | Sharding | Transactions |
+| :--- | :--- | :--- | :--- | :--- |
+| 👤 **Auth & User Accounts** | `Relational (PostgreSQL)` | Yes | No | **Yes** (ACID) |
+| 🖼️ **Profile Management** | `Relational (PostgreSQL)` | Yes | No | **Yes** (ACID) |
+| 📍 **Location History** | `PostGIS` + `S3 Object Store` | Yes | **Yes**<br>(by `userID`) | No |
+| ❤️ **Matching** | `Elasticsearch` | Yes (Built-in) | **Yes** (Built-in) | No |
+| ☕ **Places Catalogue** | `PostGIS` + `Redis` | Yes | No | **Yes** (for DB writes) |
+| 🔒 **Privacy Settings** | `Relational (PostgreSQL)` | Yes | No | **Yes** (ACID) |
+| 💬 **Direct Messaging** | `NoSQL (Cassandra)` | Yes (Built-in) | **Yes** (Built-in)<br>(by `conversation_id`)| No (Row-level only)|
+| 💳 **Payment Transactions** | `Relational (PostgreSQL)` | Yes | No | **Yes** (ACID) |
+| ⚡ **Cache & Session Store**| `In-Memory (Redis)` | Yes | Yes (Clustering) | No |
