@@ -156,7 +156,7 @@ This is a high-load service available to users on multiple platforms: both mobil
 
 <img width="1771" height="1173" alt="image" src="https://github.com/user-attachments/assets/e61a4bf1-42a1-49e2-b6d2-06654a526be6" />
 
-## Services
+## [Services](docs/SERVICES_GENERAL.md)
 
-You could find more detailed documentation on services (docs/SERVICES_GENERAL.md)[on this page].
+You could find more detailed documentation on services [on this page](docs/SERVICES_GENERAL.md).
 
