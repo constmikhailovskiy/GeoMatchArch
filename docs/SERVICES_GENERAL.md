@@ -14,14 +14,14 @@
 
 ---
 
-#### 📍 Real-Time Location & Route History
+#### 📍 [Real-Time Location & Route History](location/SERVICE_LOCATION.md)
 - **Database Choice:** `Geo-enabled relational store (PostgreSQL + PostGIS)` for Hot Data (last 30 days) + `Object Store (S3)` for Cold Data.
 - **PostGIS** allows for efficient storage and querying of location points using specialized GiST indexes.
 - An LRU/TTL-like logic is managed at the application level to move data from hot to cold storage.
 
 ---
 
-#### ☕ Places
+#### ☕ [Places](places/SERVICE_PLACES.md)
 - **Database Choice:** `PostGIS/PostgreSQL` + `Redis Cache`
 - Query results for nearby places are cached in **Redis** to reduce database load.
 - Can be populated with data from third-party APIs (e.g., Google Places) and stored locally in PostGIS.
@@ -35,7 +35,7 @@
 
 ---
 
-#### 💬 Direct Messaging (DMs / Chat)
+#### 💬 [Direct Messaging (DMs / Chat)](messages/SERVICE_MESSAGES.md)
 - **Database Choice:** `NoSQL Wide-Column Store (Cassandra)`
 - Optimized for **very high write throughput** and fast reads of recent messages in a conversation (fan-out reads).
 - Horizontally scalable and partitioned by `conversation_id` to handle massive message volumes without complex joins.
