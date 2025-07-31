@@ -1,0 +1,77 @@
+@startuml
+!theme plain
+!pragma layout smetana
+
+title Geo Match: Observability & Monitoring Architecture
+
+skinparam rectangle {
+    shadowing false
+    borderRadius 10
+}
+skinparam database {
+    shadowing false
+}
+skinparam component {
+    shadowing false
+}
+
+package "Application Services" {
+  component "Auth Service" as auth
+  component "Profile Service" as profile
+  component "Location Service" as location
+  component "Matching Service" as matching
+
+  note bottom of matching
+    (and all other services)
+  end note
+}
+
+package "Observability Platform" {
+
+    package "📊 Metrics" {
+        component "Prometheus" as prometheus
+        component "Grafana" as grafana
+
+        prometheus --> grafana : Views
+    }
+
+    package "📜 Logs" {
+        component "Loki" as loki
+        grafana <--> loki : Queries
+    }
+
+    package "⛓️ Traces" {
+        component "Tempo / Jaeger" as tempo
+        grafana <--> tempo : Queries
+    }
+
+    package "🚨 Alerting" {
+        component "Alertmanager" as alertmanager
+        prometheus -> alertmanager : Fires Alerts
+    }
+}
+
+package "Notification Channels" {
+    component "Slack" as slack
+}
+
+
+' --- Data Flows ---
+auth ..> prometheus : Exposes /metrics
+profile ..> prometheus : Exposes /metrics
+location ..> prometheus : Exposes /metrics
+matching ..> prometheus : Exposes /metrics
+
+auth ..> loki : Pushes logs
+profile ..> loki : Pushes logs
+location ..> loki : Pushes logs
+matching ..> loki : Pushes logs
+
+auth ..> tempo : Sends traces
+profile ..> tempo : Sends traces
+location ..> tempo : Sends traces
+matching ..> tempo : Sends traces
+
+alertmanager ..> slack : Notifies
+
+@enduml

@@ -159,4 +159,3 @@ This is a high-load service available to users on multiple platforms: both mobil
 ## [Services](docs/SERVICES_GENERAL.md)
 
 You could find more detailed documentation on services [on this page](docs/SERVICES_GENERAL.md).
-
