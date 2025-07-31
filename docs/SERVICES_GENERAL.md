@@ -28,7 +28,7 @@
 
 ---
 
-#### 🔒 Privacy Settings & Data Exports/Deletes
+#### 🔒 [Privacy Settings & Data Exports/Deletes](data-privacy/SERVICE_DATA_PRIVACY.md)
 - **Database Choice:** `Relational DB (PostgreSQL)`
 - Privacy flags (`share_location`, `invisible_mode`) and data management requests are stored alongside user records.
 - Relies on database features like cascade deletion to reliably handle data removal requests as required by GDPR.
