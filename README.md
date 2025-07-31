@@ -116,6 +116,38 @@ This is a high-load service available to users on multiple platforms: both mobil
 ---
 
 ### Optional Optimizations
-- Archive raw location data older than 30 days to cold storage (e.g., S3 Glacier).
 - Store aggregated "top routes" instead of raw points for older data to reduce DB size (e.g., compress points into polygons).
 - Archive direct messages older than 1 year to cold storage or delete according to user policy.
+
+### Load Balancers
+
+**Present:** Yes
+
+1.  **Edge/API Gateway LB**
+    -   Fronts all client traffic (web, mobile).
+    -   Terminates TLS, enforces throttling, and routes requests to the proper microservice cluster.
+
+2.  **Database LBs (for Read Replicas)**
+    -   Distributes read queries across multiple database replicas to improve performance and availability.
+
+### Load Balancer Traffic Estimates
+
+#### Average Load
+- **Writes/sec:** 1,736 (location) + 174 (messages) ≈ **1,910 wps**
+- **Reads/sec:** 35 (history) + 347 (matches) + 174 (places) + 347 (message reads) + 0.24 (billing) ≈ **903 rps**
+- **Combined Average:** ~2,800 requests/sec
+
+---
+
+#### Peak Load
+- **Writes:** ~15,000 (location) + 1,500 (messages) ≈ **16,500 wps**
+- **Reads:** ~200 (history) + 3,000 (matches) + 1,500 (places) + 3,000 (message reads) + ~2 (billing) ≈ **7,702 rps**
+- **Combined Peak:** ~24,200 requests/sec
+
+---
+
+### Routing Strategy
+
+- **Chosen Variant:** Weighted Routing
+
+> We know ahead of time that some pods will be more powerful, so we will configure weighted routing. This allows heavier-duty instances to shoulder a larger share of the traffic, while smaller pods still receive requests but at a lower rate.
