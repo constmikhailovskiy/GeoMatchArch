@@ -35,3 +35,12 @@
 - **Rationale:** Yes, consensus is a critical part of how an Elasticsearch cluster operates.
     - **How it works:** An Elasticsearch cluster needs to **agree** on its state: which nodes are active, how shards are distributed, and most importantly, **which node is the master node**. The master node is responsible for managing the state of the entire cluster.
     - Elasticsearch uses its own consensus algorithm (similar to Raft) to reliably elect a master node and manage the cluster, allowing the system to recover from failures automatically.
+
+---
+
+### Monitoring & Observability
+
+- **Requirement:** Critically Necessary.
+- **Rationale:** Monitoring is essential for maintaining the health and performance of the `Matching Service`.
+    - **Tools:** Use Elasticsearch's built-in monitoring features or integrate with external tools like Kibana or Grafana for visualization and alerting.
+    - **[Key Metrics to Monitor](SERVICE_MATCHES_MONITORING.md)**
