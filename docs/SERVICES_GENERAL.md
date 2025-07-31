@@ -43,6 +43,15 @@
 
 ---
 
+#### ❤️ [Matching & Recommendations](matches/SERVICE_MATCHES.md)
+
+- **Database Choice:** `Search Engine (Elasticsearch)`
+- Ideal for **full-text search** and complex queries on user profiles and interests.
+- Supports **scoring** and **ranking** of matches based on user preferences and location proximity.
+- Built-in replication and sharding capabilities allow for horizontal scaling as the user base grows.
+- Can be integrated with a relational database for user data storage, using Elasticsearch as a secondary index for fast lookups.
+- Supports complex queries like "find users with similar interests within 5 km".
+
 #### 💳 Monetization & Payment Transactions
 - **Database Choice:** `Relational DB (PostgreSQL)`
 - Financial transactions demand **strict consistency**, auditability, and easy reporting, making an ACID-compliant DB essential.
