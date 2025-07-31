@@ -151,3 +151,12 @@ This is a high-load service available to users on multiple platforms: both mobil
 - **Chosen Variant:** Weighted Routing
 
 > We know ahead of time that some pods will be more powerful, so we will configure weighted routing. This allows heavier-duty instances to shoulder a larger share of the traffic, while smaller pods still receive requests but at a lower rate.
+
+## High-Level Architecture Diagram
+
+<img width="1771" height="1173" alt="image" src="https://github.com/user-attachments/assets/e61a4bf1-42a1-49e2-b6d2-06654a526be6" />
+
+## Services
+
+You could find more detailed documentation on services (docs/SERVICES_GENERAL.md)[on this page].
+
