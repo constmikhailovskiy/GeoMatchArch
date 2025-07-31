@@ -1,0 +1,122 @@
+@startuml
+
+!pragma layout smetana
+!theme plain
+title Geo Match - Updated Architecture (Asynchronous & Decoupled)
+
+skinparam rectangle {
+    shadowing false
+    borderRadius 10
+}
+skinparam database {
+    shadowing false
+    borderRadius 20
+}
+skinparam actor {
+    shadowing false
+}
+skinparam queue {
+    shadowing false
+}
+
+' === Actors & Entrypoints ===
+actor "User" as user
+boundary "Mobile/Web App" as app
+boundary "Load Balancer / API Gateway" as gateway
+
+user --> app
+app --> gateway
+
+' === Asynchronous Message Broker ===
+package "Message Broker" {
+  queue "Apache Kafka" as kafka
+}
+
+' === Services & Databases ===
+package "Auth, Profile & Privacy (Decoupled)" {
+    component "Auth Service" as auth
+    database "Auth DB\n(PostgreSQL)" as auth_db
+    auth --> auth_db
+
+    component "Profile Service" as profile
+    database "Profile DB\n(PostgreSQL)" as profile_db
+    profile --> profile_db
+
+    component "Privacy Service" as privacy
+    database "Privacy DB\n(PostgreSQL)" as privacy_db
+    privacy --> privacy_db
+}
+
+package "Location (Async Ingestion)" {
+    component "Location Service\n(Producer)" as location_producer
+    component "Location Consumer" as location_consumer
+    database "Geo DB (Hot)\n(PostGIS, 30 days)" as geo_db_hot
+    database "S3 Cold Storage\n(Parquet Archive)" as s3_cold
+    database "Redis Cache\n(latest_location)" as redis_location
+
+    location_consumer .> geo_db_hot : "Write Batches"
+    location_consumer .> s3_cold : "Archive Data"
+}
+
+package "Matching (Event-Driven)" {
+    component "Matching Service" as matching
+    database "Elasticsearch\n(Matches)" as es_matches
+    database "Redis Cache\n(matches)" as redis_matches
+    matching --> es_matches
+    matching --> redis_matches
+}
+
+package "Other Services" {
+    component "Places Service" as places
+    database "POI DB\n(PostGIS)" as poi_db
+    places --> poi_db
+
+    component "Messaging Service" as messaging
+    database "Message Store\n(Cassandra)" as cassandra_db
+    messaging --> cassandra_db
+
+    component "Payment Service" as payment
+    database "Payment DB\n(Relational)" as payment_db
+    payment --> payment_db
+}
+
+' === CDC Component ===
+component "CDC" as cdc
+
+' === Communication Flows ===
+
+' --- Synchronous API Calls (User-facing) ---
+gateway --> auth : "POST /auth/..."
+gateway --> profile : "GET/PUT /profiles/..."
+gateway --> privacy : "GET/PUT /privacy/..."
+gateway --> matching : "GET /matches"
+gateway --> location_producer : "POST /location/ping\n(Fast 202 Accepted)"
+location_producer --> geo_db_hot : "GET /location/history\n(Reads recent)"
+gateway --> places : "GET /places/nearby"
+gateway --> messaging : "POST/GET /messages"
+gateway --> payment : "POST/GET /payments"
+
+
+' --- Asynchronous Location Ingestion Flow ---
+note right of location_producer #LightCyan
+  **Async Ingestion Flow**
+  1. Producer sends ping to Kafka.
+  2. Consumer processes data from Kafka.
+end note
+location_producer ..> kafka : "location_pings"
+kafka ..> location_consumer : "location_pings"
+
+
+' --- Asynchronous CDC Flow for Profile Sync ---
+note top of cdc #LightGoldenRodYellow
+  **Change Data Capture (CDC) Flow**
+  1. CDC detects DB change.
+  2. Event published to Kafka.
+  3. Matching service consumes event
+     to update its own search index.
+end note
+profile_db <.. cdc : "Monitors Transaction Log"
+cdc ..> kafka : "ProfileUpdated event"
+kafka ..> matching : "ProfileUpdated event"
+
+@enduml
