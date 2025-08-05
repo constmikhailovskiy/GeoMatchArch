@@ -108,6 +108,10 @@ The architecture employs two primary communication patterns, chosen based on the
 - *Synchronous Communication* (Request/Response) for immediate needs.
 - *Asynchronous Communication* (Event-Driven) for decoupling, resilience, and high-throughput tasks.
 
+Here's a high-level overview diagram of how each service communicates with others:
+
+[Service Communication Diagram](../diagrams/geomatch_cross_service_communication.png)
+
 ---
 
 #### 👤 Auth Service
@@ -234,7 +238,6 @@ This service uses a synchronous API for clients but an asynchronous, event-based
 -   **Rationale:**
     -   The core logic of sending and receiving messages must be fast and reliable, which is handled by the synchronous API.
     -   However, the task of **notifying the recipient** (e.g., via a push notification) should be decoupled. The `Messages Service`'s job is to save the message, not to manage push notifications. By publishing an event, it allows a separate `Notification Service` to handle the complex logic of sending notifications without blocking or slowing down the core messaging functionality. This makes the system more resilient and scalable.
-
 
 
 

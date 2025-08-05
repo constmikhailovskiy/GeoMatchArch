@@ -1,0 +1,81 @@
+@startuml
+!pragma layout smetana
+!theme plain
+
+title Geo Match: Inter-Service Communication
+
+skinparam rectangle {
+    shadowing false
+    borderRadius 10
+}
+
+skinparam component {
+    shadowing false
+}
+
+component "API Gateway" as api_gateway
+component "Auth Service" as auth
+component "Profile Service" as profile
+component "Location API" as location_api
+component "Location Consumer" as location_consumer
+component "Matching Service" as matching
+component "Privacy Service" as privacy
+component "Places Service" as places
+component "Messages Service" as messages
+component "Notification Service" as notification
+database "Profile DB" as profile_db
+database "Location DB" as location_db
+database "Places DB" as places_db
+database "Messages DB (Cassandra)" as messages_db
+queue "Kafka" as kafka
+database "Matching DB (Elasticsearch)" as matching_db
+
+' --- API Gateway Interactions ---
+api_gateway -->> auth : /register, /login, /refresh (sync)
+api_gateway -->> profile : /profiles (sync)
+api_gateway -->> location_api : /location/ping (async-style), /location/history (sync)
+api_gateway -->> matching : /matches (sync)
+api_gateway -->> privacy : /privacy (sync), /privacy/delete-account (sync)
+api_gateway -->> places : /places/nearby (sync)
+api_gateway -->> messages : /messages (sync), /conversations/{id} (sync)
+
+' --- Auth Service Interactions ---
+auth -->> profile : POST (sync)
+auth -->> privacy : POST (sync)
+kafka <-- auth : Consumes UserDeletionRequested
+
+' --- Profile Service Interactions ---
+kafka --> matching : Publishes ProfileUpdated (via CDC)
+
+' --- Location Service Interactions ---
+location_api -->> kafka : Publishes location_ping
+kafka --> location_consumer : Consumes location_ping
+kafka <-- location_consumer : Publishes user_location_pattern_updated
+
+' --- Matching Service Interactions ---
+kafka <-- matching : Consumes ProfileUpdated
+kafka <-- matching : Consumes user_location_pattern_updated
+kafka --> notification : Publishes NewMatchCreated
+
+' --- Privacy Service Interactions ---
+kafka --> auth : Publishes UserDeletionRequested
+kafka --> profile : Publishes UserDeletionRequested (via Kafka for decoupling)
+kafka --> location_consumer : Publishes UserDeletionRequested
+kafka --> matching : Publishes UserDeletionRequested
+kafka --> places : Publishes UserDeletionRequested
+kafka --> messages : Publishes UserDeletionRequested
+
+' --- Messages Service Interactions ---
+kafka --> notification : Publishes NewMessageReceived
+
+' --- Places Service Interactions ---
+places --o "Google Maps API" : Fetches Data (sync)
+
+' --- Data Persistence ---
+profile -->> profile_db
+location_consumer -->> location_db
+places -->> places_db
+matching -->> matching_db
+messages -->> messages_db
+
+@enduml
